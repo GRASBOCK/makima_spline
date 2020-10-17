@@ -8,6 +8,7 @@ description = "An implementation of the modified akima spline interpolation"
 repository = "https://github.com/GRASBOCK/makima_spline"
 keywords = ["spline", "interpolation", "akima"]
 categories = ["mathematics", "science"]
+exclude = ["general.png", "step.png"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
