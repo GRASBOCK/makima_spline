@@ -1,10 +1,35 @@
+/// Contains all the necessary information to sample a given point
 pub struct Spline{
+	/// Contains the positions of the data.
+	/// This is used to figure out which coefficients need to be used at a given position
 	x: Vec<f64>,
+
+	/// The spline is made of cubic polynomial segments with coefficients
+	/// A cubic Polynomial has 4 parameters and thus this is a vec containing 4 parameters for each segment
 	coefficients: Vec<(f64, f64, f64, f64)>
 }
 
 impl Spline{
+	/// Returns a Spline struct from a dataset
+	///
+	/// # Arguments
+	///
+	/// * `points` - A vec that holds each point `(f64, f64)` to be interpolated<br>
+	/// The first element in the tuple being the key that will be used for finding the right segment during sampling
+	///
+	/// # Example
+	///
+	/// ```
+	/// let spline = makima_spline::Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
+	///  ``` 
+	///
+	/// # Panics
+	///
+	/// [`panic!`] when there is only one point in the vector. Make sure your vector contains at least 2 points to interpolate between
+	///
+	/// [`panic!`]: https://doc.rust-lang.org/std/macro.panic.html
 	pub fn from_vec(points: Vec<(f64, f64)>)->Spline{
+		assert!(points.len() > 1, "Only one point. No Interpolation possible");
 		let mut points = points;
 		points.sort_by(|(x0, _), (x1, _)| x0.partial_cmp(x1).unwrap());
 		// tangents
@@ -12,15 +37,19 @@ impl Spline{
 		for i in 0..points.len()-1{
 			m.push((points[i+1].1 - points[i].1)/(points[i+1].0-points[i].0));
 		}
+		if m.len() == 1{
+			// this is just a line!
+			let p1 = points[0];
+			let p2 = points[1];
+			let coefficients =  vec![(p1.1, m[0], 0., 0.)];
+			return Spline{x: vec![p1.0, p2.0], coefficients}
+		}
 		// extrapolation at beginning
 		m.insert(0, 2.0*m[0]-m[1]);
 		m.insert(0, 2.0*m[0]-m[1]);
 		// extrapolation at end
-		println!("m:{:?}",m);
 		m.push(2.0*m[m.len()-1]-m[m.len()-2]);
-		println!("m:{:?}",m);
 		m.push(2.0*m[m.len()-1]-m[m.len()-2]);
-		println!("m:{:?}",m);
 		let m = m; // make immutable
 
 		// derivatives at points 
@@ -38,7 +67,6 @@ impl Spline{
 			
 		}
 		let t = t; // make immutable
-		println!("t: {:?}", t);
 
 		// coefficients
 		let mut coefficients = Vec::<(f64, f64, f64, f64)>::with_capacity(points.len()-1);
@@ -60,6 +88,16 @@ impl Spline{
 		Spline{x, coefficients}
 	}
 
+	///samples a point at a given position
+	///
+	/// # Example
+	/// 
+	/// ```
+	/// let spline = makima_spline::Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
+	/// let sample: f64 = spline.sample(1.5);
+	/// //This even works outside the given data (extrapolation)
+	/// let sample2: f64 = spline.sample(-3.0);
+	/// ```
 	pub fn sample(&self, pos: f64)-> f64{
 		let y = |xi: f64, x: f64, (a, b, c, d): (f64, f64, f64, f64)| -> f64{
 			let dx = x-xi;
@@ -67,11 +105,9 @@ impl Spline{
 		};
 		if pos <= self.x[0]{
 			// extrapolate linear
-			let (a, b, c, d) = self.coefficients[0];
+			let (a, b, _, _) = self.coefficients[0];
 			let xi = self.x[0];
-			let dx = -xi; 
-			let m = b + 2.*c*dx + 3.*d*dx*dx;
-			return a + (pos-xi)*m;
+			return a + (pos-xi)*b;
 		}
 		if pos >= self.x[self.x.len()-1]{
 			// extrapolate linear
@@ -97,6 +133,14 @@ impl Spline{
 	}
 }
 
+/// converts two vecs of x & y coordinates into points (f64, f64) used to build the spline
+///
+/// # Example
+/// ```
+/// let x = vec![1., 2., 3.];
+/// let y = vec![3., 5., 2.];
+/// let points = makima_spline::vec_to_points(&x, &y);
+/// ```
 pub fn vec_to_points(x: &Vec<f64>, y: &Vec<f64>) -> Vec<(f64, f64)>{
 	assert!(x.len() == y.len());
 	let mut points = Vec::<(f64, f64)>::with_capacity(x.len());
@@ -106,43 +150,4 @@ pub fn vec_to_points(x: &Vec<f64>, y: &Vec<f64>) -> Vec<(f64, f64)>{
 	points
 }
 
-#[cfg(test)]
-mod tests {
-
-	use crate::Spline;
-
-	fn output(file: String, spline: &Spline, x_max: f64, x_min: f64, delta: f64){
-		let steps = ((x_max - x_min)/delta) as usize;
-		let mut contents = String::default();
-		for i in 0..steps{
-			let x = i as f64*delta+x_min;
-			let y = spline.sample(x);
-			contents.push_str(format!("{} {}\n", x, y).as_str());
-		}
-		std::fs::write(&file, contents).unwrap();
-	}
-
-	#[test]
-	fn step(){
-		let x = vec![1., 2., 3., 4., 5., 6., 7., 8.];
-		let y = vec![-1., -1., -1., 0.0, 1., 1., 1., 1.];
-
-		let points = crate::vec_to_points(&x, &y);
-
-		let spline = Spline::from_vec(points);
-
-		output(format!("step"), &spline, x[x.len()-1], x[0], 0.01)
-	}
-
-	#[test]
-	fn general() {
-		let x = vec![1.0, 2.0, 3.0, 4.0, 5.0, 5.5, 7.0, 8.0, 9.0, 9.5, 10.0];
-		let y = vec![-0., 0., 0., 0.5, 0.4, 1.2, 1.2, 0.1, 0., 0.3, 0.6];
-
-		let points = crate::vec_to_points(&x, &y);
-
-		let spline = Spline::from_vec(points);
-		
-		output(format!("general"), &spline, x[x.len()-1]+1.5, x[0]-1.0, 0.01)
-	}
-}
+mod tests;
