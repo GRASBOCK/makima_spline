@@ -2,7 +2,7 @@
 A implementation of the modified akima interpolation<br>
 **+** additionally features linear extrapolation
 
-<img src="general.png">
+<img src="testing/general.png">
 
 
 ## HowTo
@@ -26,4 +26,4 @@ To sample do this:
 ```rust
 let y = spline.sample(x);
 ```
-<img src="step.png">
+<img src="testing/step.png">
