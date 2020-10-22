@@ -3,12 +3,12 @@ mod tests {
 
 	use crate::Spline;
 
-	fn output(file: String, spline: &Spline, x_min: f64, x_max: f64, delta: f64){
+	fn output(file: String, sampling: &dyn Fn(f64)-> f64, x_min: f64, x_max: f64, delta: f64){
 		let steps = ((x_max - x_min)/delta) as usize;
 		let mut contents = String::default();
 		for i in 0..steps{
 			let x = i as f64*delta+x_min;
-			let y = spline.sample(x);
+			let y = sampling(x);
 			contents.push_str(format!("{} {}\n", x, y).as_str());
 		}
 		std::fs::write(&file, contents).unwrap();
@@ -23,7 +23,8 @@ mod tests {
 
 		let spline = Spline::from_vec(points);
 
-		output(format!("testing/step"), &spline, x[0], x[x.len()-1], 0.01)
+		
+		output(format!("testing/step"), &|x|spline.sample(x), x[0], x[x.len()-1], 0.01)
 	}
 
 	#[test]
@@ -35,7 +36,10 @@ mod tests {
 
 		let spline = Spline::from_vec(points);
 		
-		output(format!("testing/general"), &spline, x[0]-1.0, x[x.len()-1]+1.5, 0.01)
+		output(format!("testing/general"), &|x|spline.sample(x), x[0]-1.0, x[x.len()-1]+1.5, 0.01);
+		output(format!("testing/general_deriv1"), &|x|spline.derivative_1(x), x[0]-1.0, x[x.len()-1]+1.5, 0.01);
+		output(format!("testing/general_deriv2"), &|x|spline.derivative_2(x), x[0]-1.0, x[x.len()-1]+1.5, 0.01);
+		output(format!("testing/general_deriv3"), &|x|spline.derivative_3(x), x[0]-1.0, x[x.len()-1]+1.5, 0.01);
 	}
 
 	#[test]
@@ -47,12 +51,12 @@ mod tests {
 
 		let spline = Spline::from_vec(points);
 
-		output(format!("testing/line"), &spline, x[0]-1.0, x[x.len()-1]+1.0, 0.01)
+		output(format!("testing/line"), &|x|spline.sample(x), x[0]-1.0, x[x.len()-1]+1.0, 0.01)
 	}
 	#[test]
 	fn basic(){
 		let spline = Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
 
-		output(format!("testing/basic"), &spline, 0.0, 4.0, 0.01)
+		output(format!("testing/basic"), &|x|spline.sample(x), 0.0, 4.0, 0.01)
 	}	
 }

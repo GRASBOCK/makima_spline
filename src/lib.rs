@@ -88,26 +88,15 @@ impl Spline{
 		Spline{x, coefficients}
 	}
 
-	///samples a point at a given position
+	///finds the segment and its parameters for interpolation
 	///
-	/// # Example
-	/// 
-	/// ```
-	/// let spline = makima_spline::Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
-	/// let sample: f64 = spline.sample(1.5);
-	/// //This even works outside the given data (extrapolation)
-	/// let sample2: f64 = spline.sample(-3.0);
-	/// ```
-	pub fn sample(&self, pos: f64)-> f64{
-		let y = |xi: f64, x: f64, (a, b, c, d): (f64, f64, f64, f64)| -> f64{
-			let dx = x-xi;
-			a + b*dx + c*dx*dx + d*dx*dx*dx
-		};
+	///the output is (a, b, c, d, xi) with xi the coordinate of the polynomial for dx
+	fn segment(&self, pos: f64) -> (f64, f64, f64, f64, f64){
 		if pos <= self.x[0]{
 			// extrapolate linear
 			let (a, b, _, _) = self.coefficients[0];
 			let xi = self.x[0];
-			return a + (pos-xi)*b;
+			return (a, b, 0.0, 0.0, xi);
 		}
 		if pos >= self.x[self.x.len()-1]{
 			// extrapolate linear
@@ -115,8 +104,9 @@ impl Spline{
 			let xi = self.x[self.x.len()-2];
 			let xi1 = self.x[self.x.len()-1];
 			let dx = xi1-xi; 
+			let y1 = a + b*dx + c*dx*dx + d*dx*dx*dx;
 			let m = b + 2.*c*dx + 3.*d*dx*dx;
-			return y(xi, xi1, (a, b, c, d)) + (pos-xi1)*m;
+			return (y1, m, 0.0, 0.0, xi1);
 		}
 		//do binary search
 		let mut upper = self.x.len();
@@ -129,7 +119,49 @@ impl Spline{
 				upper = center;
 			}
 		}
-		y(self.x[lower], pos, self.coefficients[lower])
+		let coef = self.coefficients[lower];
+		(coef.0, coef.1, coef.2, coef.3, self.x[lower])
+	}
+
+	///samples a point at a given position
+	///
+	/// # Example
+	/// 
+	/// ```
+	/// let spline = makima_spline::Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
+	/// let sample: f64 = spline.sample(1.5);
+	/// //This even works outside the given data (extrapolation)
+	/// let sample2: f64 = spline.sample(-3.0);
+	/// ```
+	pub fn sample(&self, pos: f64)-> f64{
+		let (a, b, c, d, xi) = self.segment(pos);
+		
+		let dx = pos-xi;
+		a + b*dx + c*dx*dx + d*dx*dx*dx
+	}
+
+	/// returns the 1. order derivative at sampled point
+	pub fn derivative_1(&self, pos: f64) -> f64{
+		let (_, b, c, d, xi) = self.segment(pos);
+		let dx = pos-xi;
+		b + 2.*c*dx + 3.*d*dx*dx
+	}
+
+	/// returns the 2. order derivative at sampled point 
+	///
+	/// note, this doesn't have to be continous
+	pub fn derivative_2(&self, pos: f64) -> f64{
+		let (_, _, c, d, xi) = self.segment(pos);
+		let dx = pos-xi;
+		2.*c + 6.*d*dx
+	}
+
+	/// returns the 3. order derivative at sampled point 
+	///
+	/// note, this doesn't have to be continous
+	pub fn derivative_3(&self, pos: f64) -> f64{
+		let (_, _, _, d, _) = self.segment(pos);
+		6.0*d
 	}
 }
 
