@@ -1,6 +1,7 @@
 # makima_spline
 A implementation of the modified akima interpolation<br>
-**+** additionally features linear extrapolation
+**+** linear extrapolation<br>
+**+** 1., 2., and 3. order derivatives
 
 <img src="testing/general.png">
 
