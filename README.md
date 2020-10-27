@@ -1,7 +1,8 @@
 # makima_spline
 A implementation of the modified akima interpolation<br>
 **+** linear extrapolation<br>
-**+** 1., 2., and 3. order derivatives
+**+** 1., 2., and 3. order derivatives<br>
+**+** bicubic interpolation as a feature
 
 <img src="testing/general.png">
 
@@ -28,3 +29,19 @@ To sample do this:
 let y = spline.sample(x);
 ```
 <img src="testing/step.png">
+
+# 2d interpolation
+Based on the crate [bicubic](https://crates.io/crates/bicubic) it is possible to interpolate in two dimensions. 
+
+Create points
+``` rust
+let x = vec![-1.0, 0.0, 2.0];
+let y = vec![-0.0, 1.0];
+let f = vec![5.0, 4.0, 5.0, 1.0, 1.0, 1.0];
+``` 
+construct `bicubic` Struct
+``` 
+let bci = makima_spline::n_dimensional::bicubic_from_grid(&x, &y, &f);
+```
+
+The submodule is called `n_dimensional` in case higher dimensions will be supported in the future, but currently there is only 2d interpolation

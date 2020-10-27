@@ -182,4 +182,7 @@ pub fn vec_to_points(x: &Vec<f64>, y: &Vec<f64>) -> Vec<(f64, f64)>{
 	points
 }
 
+#[cfg(feature = "bi_dimensional")]
+pub mod n_dimensional;
+
 mod tests;

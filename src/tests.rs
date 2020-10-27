@@ -1,6 +1,5 @@
 #[cfg(test)]
-mod tests {
-
+mod tests{
 	use crate::Spline;
 
 	fn output(file: String, sampling: &dyn Fn(f64)-> f64, x_min: f64, x_max: f64, delta: f64){
@@ -58,5 +57,6 @@ mod tests {
 		let spline = Spline::from_vec(vec![(1., 3.), (2., 5.), (3., 2.)]);
 
 		output(format!("testing/basic"), &|x|spline.sample(x), 0.0, 4.0, 0.01)
-	}	
+	}
+
 }
