@@ -31,7 +31,7 @@ let y = spline.sample(x);
 <img src="testing/step.png">
 
 # 2d interpolation
-Based on the crate [bicubic](https://crates.io/crates/bicubic) it is possible to interpolate in two dimensions. 
+Based on the [bicubic](https://crates.io/crates/bicubic) crate it is possible to interpolate in two dimensions. 
 
 Create points
 ``` rust
@@ -39,7 +39,7 @@ let x = vec![-1.0, 0.0, 2.0];
 let y = vec![-0.0, 1.0];
 let f = vec![5.0, 4.0, 5.0, 1.0, 1.0, 1.0];
 ``` 
-construct `bicubic` Struct
+construct `Bicubic` Struct
 ``` 
 let bci = makima_spline::n_dimensional::bicubic_from_grid(&x, &y, &f);
 ```
